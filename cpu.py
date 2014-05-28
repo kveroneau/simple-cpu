@@ -236,6 +236,7 @@ class Coder(Cmd):
         'mov': 2,
         'add': 12,
         'sub': 13,
+        'cmp': 17,
         'mul': 18,
         'div': 19,
     }
@@ -769,6 +770,23 @@ class CPUCore(object):
             elif op == 16:
                 if self.cx.b != self.mem.read16().b:
                     self.mem.ptr = self.dx.b+self.cs.b
+            elif op == 17:
+                xop,dst,src = self.get_xop()
+                if xop in [1,3,9,11]:
+                    # Register is destination
+                    dst = getattr(self, self.var_map[dst])
+                elif xop in [5,7]:
+                    dst = getattr(self, self.var_map[dst]).b
+                if xop in [9,11]:
+                    # Compares memory address and register.
+                    result = src - dst.value
+                elif xop in [4,5,6,7]:
+                    # Compares data and memory address.
+                    result = src - self.mem[self.ds.b+dst]
+                else:
+                    # Compares data and register.
+                    result = src - dst.value
+                self.cx.value = result
             elif op == 18:
                 xop,dst,src = self.get_xop()
                 if xop not in [1,3,6,9,11]:
